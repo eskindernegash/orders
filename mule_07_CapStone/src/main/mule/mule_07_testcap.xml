@@ -38,15 +38,12 @@ var metadatas = (vars.newMeta)[0] -  "id"
 		orderStatus: item.statuss	
        }),
        
-    highValueOrders: orders filter ((item, index) ->  item.amount > 100 ),
-    
-    cancelledOrder: orders filter ($.statuss == "CANCELLED"),   	
-      
-    ordersByCountry: orders groupBy (item, index) -> item.country,
-    
-    metadataTransformed: metadatas mapObject ((upper($$ as String)): $),   	
-        
-    metadataFiltered: metadatas filterObject ((value, key) -> not (key ~= "sources")  )    
+            highValueOrders: orders filter ((item, index) ->  item.amount > 100 ),    
+            cancelledOrder: orders filter ($.statuss == "CANCELLED"), 	
+            ordersByCountry: orders groupBy (item, index) -> item.country,    
+            metadataTransformed: metadatas mapObject ((upper($$ as String)): $),  
+            metadataFiltered: metadatas filterObject ((value, key) -> not (key ~= "sources")
+		)    
     
 }]]></ee:set-payload>
 			</ee:message>
