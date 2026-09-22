@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="817b4922-a18f-4cbc-88ac-0a4eae75699c" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="2d5545e3-7816-4b6a-b3ae-1c9338af25ad" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="maraki" database="stores" />
+	</db:config>
+	<flow name="mule_07_testcapFlow" doc:id="79dda26c-d898-4723-8866-061d3fc3174b" >
+		<http:listener doc:name="Listener_orders" doc:id="1060bbb5-48fd-4f6c-8ad8-52e0bcc699c7" config-ref="HTTP_Listener_config" path="/orders" allowedMethods="GET"/>
+		<db:select doc:name="Select_orders" doc:id="befb3e6a-ff02-42d9-bee5-8ff2ddf6a1a8" config-ref="Database_Config" target="newOrder">
+			<db:sql ><![CDATA[SELECT * FROM orders;]]></db:sql>
+		</db:select>
+		<db:select doc:name="Selectmeta" doc:id="800b6657-2aa3-4d16-a78e-21f0c32f0f98" config-ref="Database_Config" target="newMeta">
+			<db:sql ><![CDATA[SELECT * FROM metadata WHERE id = 1;]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="acd79291-c9f8-470d-80a8-aceb094324ee" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var orders = vars.newOrder map ((item) -> item - "id")                    
+var metadatas = (vars.newMeta)[0] -  "id"
+
+---
+
+{
+	processedOrders: orders map ((item, index) -> {	
+		id: item.orderId,
+		customerName: item.customer,
+		totalAmount: item.amount,
+		orderStatus: item.statuss	
+       }),
+       
+    highValueOrders: orders filter ((item, index) ->  item.amount > 100 ),
+    
+    cancelledOrder: orders filter ($.statuss == "CANCELLED"),   	
+      
+    ordersByCountry: orders groupBy (item, index) -> item.country,
+    
+    metadataTransformed: metadatas mapObject ((upper($$ as String)): $),   	
+        
+    metadataFiltered: metadatas filterObject ((value, key) -> not (key ~= "sources")  )    
+    
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
